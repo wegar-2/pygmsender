@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from os.path import basename
 from typing import Optional
 from loguru import logger
+from pathlib import Path
 
 
 class EmailSender:  # pylint: disable=R0903
@@ -54,7 +55,7 @@ class EmailSender:  # pylint: disable=R0903
             email_subject: str,
             recipients: list[str],
             email_text: Optional[str] = None,
-            attachments_paths: Optional[list[str]] = None
+            attachments_paths: Optional[list[Path]] = None
     ):
 
         message = MIMEMultipart()
@@ -67,19 +68,23 @@ class EmailSender:  # pylint: disable=R0903
             message.attach(mime_text)
 
         if attachments_paths is not None:
-            for iter_attachment in attachments_paths:
-                if not os.path.exists(iter_attachment):
+            for iterpath in attachments_paths:
+                if not iterpath.exists():
                     logger.warning(
-                        f"The following file does not exist and cannot be "
-                        f"attached to the email: {iter_attachment}"
+                        f"The following path does not exist and cannot be "
+                        f"attached to the email: {iterpath}"
+                    )
+                if iterpath.is_dir():
+                    logger.warning(
+                        f"The following path exists but it is a directory "
+                        f"{iterpath}"
                     )
                 else:
-                    with open(iter_attachment, "rb") as fil:
-                        basename_ = basename(iter_attachment)
-                        part = MIMEApplication(fil.read(), Name=basename_)
+                    with open(iterpath, "rb") as fil:
+                        part = MIMEApplication(fil.read(), Name=iterpath.name)
                         part['Content-Disposition'] = (f'attachment; '
                                                        f'filename='
-                                                       f'"{basename_}"')
+                                                       f'"{iterpath.name}"')
                         message.attach(part)
 
         return message
