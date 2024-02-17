@@ -3,8 +3,8 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
-from loguru import logger
 from pathlib import Path
+from loguru import logger
 
 
 class EmailSender:  # pylint: disable=R0903
