@@ -10,4 +10,3 @@ class GmailSender(EmailSender):
             password=password,
             port=587
         )
-

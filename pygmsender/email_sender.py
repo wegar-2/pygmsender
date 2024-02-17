@@ -10,7 +10,13 @@ from typing import Optional
 
 class EmailSender:
 
-    def __init__(self, sender: str, server: str, password: str, port: int = 587):
+    def __init__(
+            self,
+            sender: str,
+            server: str,
+            password: str,
+            port: int = 587
+    ):
         self._PORT = port
         self._SERVER = server
         self._SENDER = sender
@@ -32,10 +38,10 @@ class EmailSender:
             session.login(user=self._SENDER) # noqa
 
         message = self._get_msg_content(
-            str_email_subject=email_subject,
-            l_str_attachments_paths=attachments_paths,
-            l_str_recipients=recipients,
-            str_email_text=email_text
+            email_subject=email_subject,
+            attachments_paths=attachments_paths,
+            recipients=recipients,
+            email_text=email_text
         )
 
         session.sendmail(self._SENDER, recipients, message.as_string())
@@ -43,30 +49,35 @@ class EmailSender:
 
     def _get_msg_content(
             self,
-            str_email_subject: str,
-            l_str_recipients: list[str],
-            str_email_text: Optional[str] = None,
-            l_str_attachments_paths: Optional[list[str]] = None
+            email_subject: str,
+            recipients: list[str],
+            email_text: Optional[str] = None,
+            attachments_paths: Optional[list[str]] = None
     ):
 
         message = MIMEMultipart()
-        message["Subject"] = str_email_subject
+        message["Subject"] = email_subject
         message["From"] = self._SENDER
-        message["To"] = ",".join(l_str_recipients)
+        message["To"] = ",".join(recipients)
 
-        if str_email_text is not None:
-            mime_text = MIMEText(str_email_text, "plain")
+        if email_text is not None:
+            mime_text = MIMEText(email_text, "plain")
             message.attach(mime_text)
 
-        if l_str_attachments_paths is not None:
-            for iter_attachment in l_str_attachments_paths:
+        if attachments_paths is not None:
+            for iter_attachment in attachments_paths:
                 if not os.path.exists(iter_attachment):
-                    logging.warning("The following file does not exist and cannot be attached to the email: ",
-                                    iter_attachment)
+                    logging.warning(
+                        "The following file does not exist and cannot be "
+                        "attached to the email: ", iter_attachment
+                    )
                 else:
                     with open(iter_attachment, "rb") as fil:
-                        part = MIMEApplication(fil.read(), Name=basename(iter_attachment))
-                        part['Content-Disposition'] = 'attachment; filename="%s"' % basename(iter_attachment)
+                        basename_ = basename(iter_attachment)
+                        part = MIMEApplication(fil.read(), Name=basename_)
+                        part['Content-Disposition'] = (f'attachment; '
+                                                       f'filename='
+                                                       f'"{basename_}"')
                         message.attach(part)
 
         return message
