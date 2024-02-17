@@ -1,4 +1,3 @@
-import logging
 import os.path
 import smtplib
 from email.mime.application import MIMEApplication
@@ -6,9 +5,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from os.path import basename
 from typing import Optional
+from loguru import logger
 
 
-class EmailSender:
+class EmailSender:  # pylint: disable=R0903
 
     def __init__(
             self,
@@ -17,10 +17,10 @@ class EmailSender:
             password: str,
             port: int = 587
     ):
-        self._PORT = port
-        self._SERVER = server
-        self._SENDER = sender
-        self._PASS = password
+        self._port = port
+        self._server = server
+        self._sender = sender
+        self._pass = password
 
     def send_email(
             self,
@@ -30,12 +30,14 @@ class EmailSender:
             attachments_paths: Optional[list[str]] = None
     ):
 
-        session = smtplib.SMTP(self._SERVER, self._PORT)
+        session = smtplib.SMTP(self._server, self._port)
         session.starttls()
-        if self._PASS is not None:
-            session.login(user=self._SENDER, password=self._PASS)
+        if self._pass is not None:
+            session.login(user=self._sender, password=self._pass)
         else:
-            session.login(user=self._SENDER) # noqa
+            session.login(  # pylint: disable=E1120
+                user=self._sender
+            ) # noqa
 
         message = self._get_msg_content(
             email_subject=email_subject,
@@ -44,7 +46,7 @@ class EmailSender:
             email_text=email_text
         )
 
-        session.sendmail(self._SENDER, recipients, message.as_string())
+        session.sendmail(self._sender, recipients, message.as_string())
         session.quit()
 
     def _get_msg_content(
@@ -57,7 +59,7 @@ class EmailSender:
 
         message = MIMEMultipart()
         message["Subject"] = email_subject
-        message["From"] = self._SENDER
+        message["From"] = self._sender
         message["To"] = ",".join(recipients)
 
         if email_text is not None:
@@ -67,9 +69,9 @@ class EmailSender:
         if attachments_paths is not None:
             for iter_attachment in attachments_paths:
                 if not os.path.exists(iter_attachment):
-                    logging.warning(
-                        "The following file does not exist and cannot be "
-                        "attached to the email: ", iter_attachment
+                    logger.warning(
+                        f"The following file does not exist and cannot be "
+                        f"attached to the email: {iter_attachment}"
                     )
                 else:
                     with open(iter_attachment, "rb") as fil:
