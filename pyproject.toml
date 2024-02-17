@@ -1,0 +1,10 @@
+[project]
+name = "pygmsender"
+version = "0.0.1"
+description = "dispatch of emails in Python from your gmail account"  # Optional
+readme = "README.md" # Optional
+requires-python = ">=3.10"
+authors = [{name = "Artur Wegrzyn", email = "artur17@gmail.com" }]
+[build-system]
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
