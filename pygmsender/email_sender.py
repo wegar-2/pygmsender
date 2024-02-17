@@ -1,9 +1,7 @@
-import os.path
 import smtplib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from os.path import basename
 from typing import Optional
 from loguru import logger
 from pathlib import Path
