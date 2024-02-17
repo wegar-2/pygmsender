@@ -21,18 +21,17 @@ The snippet below illustrates how to send
 an email to `test12345@some.another` with 
 subject `Test email!` and body `Hello World!`:
 
-
 ```python
 import os
 from pygmsender.gmail_sender import GmailSender
 
 sender = GmailSender(
-    os.environ['MY_GMAIL_USERNAME'], 
+    os.environ['MY_GMAIL_USERNAME'],
     os.environ['MY_GMAIL_APP_PASSWORD']
-)   
+)
 sender.send_email(
-    l_str_recipients=["test12345@some.another"],
+    recipients=["test12345@some.another"],
     str_subject='Test email!',
-    str_body='Hello World!'    
+    str_body='Hello World!'
 )
 ```   

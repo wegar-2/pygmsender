@@ -1,70 +1,88 @@
-import logging
-import os.path
 import smtplib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from os.path import basename
+from typing import Optional
+from loguru import logger
+from pathlib import Path
 
 
-class EmailSender:
-    _PORT = None
-    _SERVER = None
-    _SENDER = None
-    _PASS = None
+class EmailSender:  # pylint: disable=R0903
 
-    def __init__(self, str_sender: str, str_server: str, str_pass: str, int_port: int = 587):
-        self._PORT = int_port
-        self._SERVER = str_server
-        self._SENDER = str_sender
-        self._PASS = str_pass
+    def __init__(
+            self,
+            sender: str,
+            server: str,
+            password: str,
+            port: int = 587
+    ):
+        self._port = port
+        self._server = server
+        self._sender = sender
+        self._pass = password
 
-    def send_email(self, str_email_subject: str, str_email_text: str,
-                   l_str_recipients: list[str], l_str_attachments_paths: list[str] = None):
+    def send_email(
+            self,
+            email_subject: str,
+            email_text: str,
+            recipients: list[str],
+            attachments_paths: Optional[list[str]] = None
+    ):
 
-        # create SMTP session
-        session = smtplib.SMTP(self._SERVER, self._PORT)
+        session = smtplib.SMTP(self._server, self._port)
         session.starttls()
-        if self._PASS is not None:
-            session.login(user=self._SENDER, password=self._PASS)
+        if self._pass is not None:
+            session.login(user=self._sender, password=self._pass)
         else:
-            session.login(user=self._SENDER)
-        # create the message to send
-        message = self.__get_msg_content(
-            str_email_subject=str_email_subject, l_str_attachments_paths=l_str_attachments_paths,
-            l_str_recipients=l_str_recipients, str_email_text=str_email_text)
-        # send the message with attachments
-        session.sendmail(self._SENDER, l_str_recipients, message.as_string())
-        # close the session
+            session.login(  # pylint: disable=E1120
+                user=self._sender
+            ) # noqa
+
+        message = self._get_msg_content(
+            email_subject=email_subject,
+            attachments_paths=attachments_paths,
+            recipients=recipients,
+            email_text=email_text
+        )
+
+        session.sendmail(self._sender, recipients, message.as_string())
         session.quit()
 
-    def __get_msg_content(self, str_email_subject: str, l_str_recipients: list[str], str_email_text: str = None,
-                          l_str_attachments_paths: list[str] = None):
+    def _get_msg_content(
+            self,
+            email_subject: str,
+            recipients: list[str],
+            email_text: Optional[str] = None,
+            attachments_paths: Optional[list[Path]] = None
+    ):
 
-        # create the message object and set its basic attributes
         message = MIMEMultipart()
-        message["Subject"] = str_email_subject
-        message["From"] = self._SENDER
-        message["To"] = ",".join(l_str_recipients)
+        message["Subject"] = email_subject
+        message["From"] = self._sender
+        message["To"] = ",".join(recipients)
 
-        # if there is any text to attach - add it
-        if str_email_text is not None:
-            mime_text = MIMEText(str_email_text, "plain")
+        if email_text is not None:
+            mime_text = MIMEText(email_text, "plain")
             message.attach(mime_text)
 
-        # add attachments to the message if there are any
-        if l_str_attachments_paths is not None:
-            for iter_attachment in l_str_attachments_paths:
-                if not os.path.exists(iter_attachment):
-                    logging.warning("The following file does not exist and cannot be attached to the email: ",
-                                    iter_attachment)
+        if attachments_paths is not None:
+            for iterpath in attachments_paths:
+                if not iterpath.exists():
+                    logger.warning(
+                        f"The following path does not exist and cannot be "
+                        f"attached to the email: {iterpath}"
+                    )
+                if iterpath.is_dir():
+                    logger.warning(
+                        f"The following path exists but it is a directory "
+                        f"{iterpath}"
+                    )
                 else:
-                    with open(iter_attachment, "rb") as fil:
-                        part = MIMEApplication(fil.read(), Name=basename(iter_attachment))
-                        part['Content-Disposition'] = 'attachment; filename="%s"' % basename(iter_attachment)
+                    with open(iterpath, "rb") as fil:
+                        part = MIMEApplication(fil.read(), Name=iterpath.name)
+                        part['Content-Disposition'] = (f'attachment; '
+                                                       f'filename='
+                                                       f'"{iterpath.name}"')
                         message.attach(part)
 
         return message
-
-
-
